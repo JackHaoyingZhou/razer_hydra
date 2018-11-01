@@ -56,10 +56,10 @@ int main(int argc, char **argv)
     int polling_ms = 5;
     n_private.param<int>("polling_ms", polling_ms, 5);
     if( polling_ms <= 0 ) {
-      ROS_WARN("polling_ms must be >= 1. Setting to default rate of 5 ms.");
-      polling_ms = 5;
+        ROS_WARN("polling_ms must be >= 1. Setting to default rate of 5 ms.");
+        polling_ms = 5;
     }
-//    ros::Rate rate(1/(0.001*polling_ms));
+    //    ros::Rate rate(1/(0.001*polling_ms));
 
 
     double corner_hz = 2.5;
@@ -85,12 +85,12 @@ int main(int argc, char **argv)
     ROS_INFO("Setting pivot offset [%.3f, %.3f, %.3f]", pivot_vec.x(), pivot_vec.y(), pivot_vec.z());
     ROS_INFO("Setting grab offset [%.3f, %.3f, %.3f]", grab_vec.x(), grab_vec.y(), grab_vec.z());
     if(use_grab_frame)
-      ROS_INFO("Sending messages using the 'grab' frame.");
+        ROS_INFO("Sending messages using the 'grab' frame.");
     else
-      ROS_INFO("Sending messages using the 'pivot' frame.");
+        ROS_INFO("Sending messages using the 'pivot' frame.");
 
     if(publish_tf)
-      ROS_INFO("Publishing frame data to TF.");
+        ROS_INFO("Publishing frame data to TF.");
 
     // Initialize ROS stuff
     ros::Publisher raw_pub = n.advertise<razer_hydra::HydraRaw>("hydra_raw", 1);
@@ -104,129 +104,140 @@ int main(int argc, char **argv)
     ROS_INFO("opening hydra on %s", device.c_str());
     if (!hydra.init(device.c_str()))
     {
-      ROS_FATAL("couldn't open hydra on %s", device.c_str());
-      return 1;
+        ROS_FATAL("couldn't open hydra on %s", device.c_str());
+        return 1;
     }
     ROS_INFO("starting stream... (first packet takes a few seconds)");
+    int cnt = 0;
     while (n.ok())
     {
-      if (hydra.poll(polling_ms, corner_hz))
-      {
-        // publish raw data
-        razer_hydra::HydraRaw msg;
-        msg.header.stamp = ros::Time::now();
-        for (int i = 0; i < 6; i++)
-          msg.pos[i] = hydra.raw_pos[i];
-        for (int i = 0; i < 8; i++)
-          msg.quat[i] = hydra.raw_quat[i];
-        for (int i = 0; i < 2; i++)
-          msg.buttons[i] = hydra.raw_buttons[i];
-        for (int i = 0; i < 6; i++)
-          msg.analog[i] = hydra.raw_analog[i];
-        raw_pub.publish(msg);
-
-        std::vector<geometry_msgs::TransformStamped> transforms(4);
-
-        // publish calibrated data
-        razer_hydra::Hydra h_msg;
-        h_msg.header.stamp = msg.header.stamp;
-        for (int i = 0; i < 2; i++)
-        {
-          tf::Transform transform(hydra.quat[i], hydra.pos[i]); // original transform!
-          tf::Transform t_pivot = transform, t_grab = transform;
-
-          // pivot
-          t_pivot.setOrigin(transform.getOrigin() + transform.getBasis()*pivot_vec);
-          tf::transformTFToMsg(t_pivot, transforms[i].transform);
-
-          // grab point
-          t_grab.setOrigin(transform.getOrigin() + transform.getBasis()*grab_vec);
-          tf::transformTFToMsg(t_grab, transforms[2+i].transform);
-
-          h_msg.paddles[i].transform = use_grab_frame ? transforms[2+i].transform : transforms[i].transform;
+        if (cnt == 2000){
+            cnt = 0;
         }
-        for (int i = 0; i < 7; i++)
-        {
-          h_msg.paddles[0].buttons[i] = hydra.buttons[i];
-          h_msg.paddles[1].buttons[i] = hydra.buttons[i+7];
+        cnt++;
+        if (cnt % 200 == 0){
+            n_private.param<double>("pivot_x", pivot_arr[0], pivot_arr[0]);
+            n_private.param<double>("pivot_y", pivot_arr[1], pivot_arr[1]);
+            n_private.param<double>("pivot_z", pivot_arr[2], pivot_arr[2]);
+            pivot_vec.setValue(pivot_arr[0], pivot_arr[1], pivot_arr[2]);
         }
-        for (int i = 0; i < 2; i++)
+        if (hydra.poll(polling_ms, corner_hz))
         {
-          h_msg.paddles[0].joy[i] = hydra.analog[i];
-          h_msg.paddles[1].joy[i] = hydra.analog[i+3];
+            // publish raw data
+            razer_hydra::HydraRaw msg;
+            msg.header.stamp = ros::Time::now();
+            for (int i = 0; i < 6; i++)
+                msg.pos[i] = hydra.raw_pos[i];
+            for (int i = 0; i < 8; i++)
+                msg.quat[i] = hydra.raw_quat[i];
+            for (int i = 0; i < 2; i++)
+                msg.buttons[i] = hydra.raw_buttons[i];
+            for (int i = 0; i < 6; i++)
+                msg.analog[i] = hydra.raw_analog[i];
+            raw_pub.publish(msg);
+
+            std::vector<geometry_msgs::TransformStamped> transforms(4);
+
+            // publish calibrated data
+            razer_hydra::Hydra h_msg;
+            h_msg.header.stamp = msg.header.stamp;
+            for (int i = 0; i < 2; i++)
+            {
+                tf::Transform transform(hydra.quat[i], hydra.pos[i]); // original transform!
+                tf::Transform t_pivot = transform, t_grab = transform;
+
+                // pivot
+                t_pivot.setOrigin(transform.getOrigin() + transform.getBasis()*pivot_vec);
+                tf::transformTFToMsg(t_pivot, transforms[i].transform);
+
+                // grab point
+                t_grab.setOrigin(transform.getOrigin() + transform.getBasis()*grab_vec);
+                tf::transformTFToMsg(t_grab, transforms[2+i].transform);
+
+                h_msg.paddles[i].transform = use_grab_frame ? transforms[2+i].transform : transforms[i].transform;
+            }
+            for (int i = 0; i < 7; i++)
+            {
+                h_msg.paddles[0].buttons[i] = hydra.buttons[i];
+                h_msg.paddles[1].buttons[i] = hydra.buttons[i+7];
+            }
+            for (int i = 0; i < 2; i++)
+            {
+                h_msg.paddles[0].joy[i] = hydra.analog[i];
+                h_msg.paddles[1].joy[i] = hydra.analog[i+3];
+            }
+            h_msg.paddles[0].trigger = hydra.analog[2];
+            h_msg.paddles[1].trigger = hydra.analog[5];
+            calib_pub.publish(h_msg);
+
+            if(broadcaster)
+            {
+                std::string frames[4] = {"hydra_left_pivot", "hydra_right_pivot", "hydra_left_grab", "hydra_right_grab"};
+                for(int kk = 0; kk < 4; kk++)
+                {
+                    transforms[kk].header.stamp = h_msg.header.stamp;
+                    transforms[kk].header.frame_id = "hydra_base";
+                    transforms[kk].child_frame_id = frames[kk];
+                }
+
+                broadcaster->sendTransform(transforms);
+            }
+
+            // emulate PS3 joystick message
+            sensor_msgs::Joy joy_msg;
+
+            joy_msg.axes.resize(16);
+            joy_msg.buttons.resize(16);
+            joy_msg.header.stamp = h_msg.header.stamp;
+
+            // analog pads
+            // left
+            joy_msg.axes[0] = -h_msg.paddles[0].joy[0]; // x
+            joy_msg.axes[1] = h_msg.paddles[0].joy[1]; // y
+            joy_msg.buttons[1] = h_msg.paddles[0].buttons[6]; // push
+            //right
+            joy_msg.axes[2] = -h_msg.paddles[1].joy[0]; // x
+            joy_msg.axes[3] = h_msg.paddles[1].joy[1]; // y
+            joy_msg.buttons[2] = h_msg.paddles[1].buttons[6]; // push
+
+            // push buttons
+            joy_msg.buttons[7] = h_msg.paddles[0].buttons[1]; // left
+            joy_msg.buttons[5] = h_msg.paddles[0].buttons[3]; // right
+            joy_msg.buttons[6] = h_msg.paddles[0].buttons[2]; // down
+            joy_msg.buttons[4] = h_msg.paddles[0].buttons[4]; // up
+
+            joy_msg.buttons[15] = h_msg.paddles[1].buttons[1]; // square
+            joy_msg.buttons[13] = h_msg.paddles[1].buttons[3]; // circle
+            joy_msg.buttons[14] = h_msg.paddles[1].buttons[2]; // triangle
+            joy_msg.buttons[12] = h_msg.paddles[1].buttons[4]; // cross
+
+            // menu buttons
+            joy_msg.buttons[0] = h_msg.paddles[0].buttons[5]; // select
+            joy_msg.buttons[3] = h_msg.paddles[1].buttons[5]; // start
+
+            // top buttons
+            joy_msg.buttons[10] = h_msg.paddles[0].buttons[0]; // L1
+            joy_msg.buttons[8] = h_msg.paddles[0].trigger > 0.15; // L2
+            joy_msg.axes[8] = h_msg.paddles[0].trigger; // L2
+
+            joy_msg.buttons[11] = h_msg.paddles[1].buttons[0]; // R1
+            joy_msg.buttons[9] = h_msg.paddles[1].trigger > 0.15; // R2
+            joy_msg.axes[9] = h_msg.paddles[1].trigger; // R2
+
+            // fill in fake axes for binary buttons
+            for ( int i=4; i<8; i++ )
+            {
+                joy_msg.axes[i] = joy_msg.buttons[i] ? 1.0 : 0.0;
+            }
+            for ( int i=10; i<16; i++ )
+            {
+                joy_msg.axes[i] = joy_msg.buttons[i] ? 1.0 : 0.0;
+            }
+
+            joy_pub.publish(joy_msg);
+
+            ros::spinOnce();
         }
-        h_msg.paddles[0].trigger = hydra.analog[2];
-        h_msg.paddles[1].trigger = hydra.analog[5];
-        calib_pub.publish(h_msg);
-
-        if(broadcaster)
-        {
-          std::string frames[4] = {"hydra_left_pivot", "hydra_right_pivot", "hydra_left_grab", "hydra_right_grab"};
-          for(int kk = 0; kk < 4; kk++)
-          {
-            transforms[kk].header.stamp = h_msg.header.stamp;
-            transforms[kk].header.frame_id = "hydra_base";
-            transforms[kk].child_frame_id = frames[kk];
-          }
-
-          broadcaster->sendTransform(transforms);
-        }
-
-        // emulate PS3 joystick message
-        sensor_msgs::Joy joy_msg;
-
-        joy_msg.axes.resize(16);
-        joy_msg.buttons.resize(16);
-        joy_msg.header.stamp = h_msg.header.stamp;
-
-        // analog pads
-        // left
-        joy_msg.axes[0] = -h_msg.paddles[0].joy[0]; // x
-        joy_msg.axes[1] = h_msg.paddles[0].joy[1]; // y
-        joy_msg.buttons[1] = h_msg.paddles[0].buttons[6]; // push
-        //right
-        joy_msg.axes[2] = -h_msg.paddles[1].joy[0]; // x
-        joy_msg.axes[3] = h_msg.paddles[1].joy[1]; // y
-        joy_msg.buttons[2] = h_msg.paddles[1].buttons[6]; // push
-
-        // push buttons
-        joy_msg.buttons[7] = h_msg.paddles[0].buttons[1]; // left
-        joy_msg.buttons[5] = h_msg.paddles[0].buttons[3]; // right
-        joy_msg.buttons[6] = h_msg.paddles[0].buttons[2]; // down
-        joy_msg.buttons[4] = h_msg.paddles[0].buttons[4]; // up
-
-        joy_msg.buttons[15] = h_msg.paddles[1].buttons[1]; // square
-        joy_msg.buttons[13] = h_msg.paddles[1].buttons[3]; // circle
-        joy_msg.buttons[14] = h_msg.paddles[1].buttons[2]; // triangle
-        joy_msg.buttons[12] = h_msg.paddles[1].buttons[4]; // cross
-
-        // menu buttons
-        joy_msg.buttons[0] = h_msg.paddles[0].buttons[5]; // select
-        joy_msg.buttons[3] = h_msg.paddles[1].buttons[5]; // start
-
-        // top buttons
-        joy_msg.buttons[10] = h_msg.paddles[0].buttons[0]; // L1
-        joy_msg.buttons[8] = h_msg.paddles[0].trigger > 0.15; // L2
-        joy_msg.axes[8] = h_msg.paddles[0].trigger; // L2
-
-        joy_msg.buttons[11] = h_msg.paddles[1].buttons[0]; // R1
-        joy_msg.buttons[9] = h_msg.paddles[1].trigger > 0.15; // R2
-        joy_msg.axes[9] = h_msg.paddles[1].trigger; // R2
-
-        // fill in fake axes for binary buttons
-        for ( int i=4; i<8; i++ )
-        {
-          joy_msg.axes[i] = joy_msg.buttons[i] ? 1.0 : 0.0;
-        }
-        for ( int i=10; i<16; i++ )
-        {
-          joy_msg.axes[i] = joy_msg.buttons[i] ? 1.0 : 0.0;
-        }
-
-        joy_pub.publish(joy_msg);
-
-        ros::spinOnce();
-      }
     }
 
     // clean up

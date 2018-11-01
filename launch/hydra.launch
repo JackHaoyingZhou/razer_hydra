@@ -3,13 +3,13 @@
   <arg name="publish_tf" default="false" />
   <arg name="polling_ms" default="10" />
   <arg name="corner_hz" default="3.0" />
-  <arg name="px" default="0.04" />
-  <arg name="py" default="0.0" />
+  <arg name="px" default="0.047" />
+  <arg name="py" default="0.035" />
   <arg name="pz" default="0.0" />
   <arg name="gx" default="0.12" />
   <arg name="gy" default="0.0" />
   <arg name="gz" default="0.0" />
-  <arg name="use_grab_frame" default="true" />
+  <arg name="use_grab_frame" default="false" />
 
   <node pkg="razer_hydra" type="hydra_node" name="razer_hydra_driver" output="screen" >
     <param name="device"        type="string" value="$(arg device)" />
