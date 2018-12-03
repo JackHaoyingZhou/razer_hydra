@@ -7,6 +7,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(PkgConfig)
 pkg_check_modules(PC_LIBUSB REQUIRED libusb-1.0)
+pkg_check_modules(sixense libsixense)
 
 add_message_files(
   FILES
@@ -28,7 +29,7 @@ catkin_package(
     CATKIN_DEPENDS std_msgs geometry_msgs tf message_runtime
 )
 include_directories(include ${catkin_INCLUDE_DIRS})
-
+include_directories(include ${sixense_INCLUDE_DIRS})
 add_subdirectory(src)
 add_subdirectory(tools)
 add_subdirectory(nodes)

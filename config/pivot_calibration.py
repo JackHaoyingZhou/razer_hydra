@@ -178,11 +178,11 @@ rising_edge = False
 
 def hydra_cb(data):
     global hydra_msg, new_data, trigger, rising_edge
-    if data.paddles[0].buttons[0] is True and trigger is False:
+    if data.paddles[1].buttons[0] is True and trigger is False:
         rising_edge = True
         trigger = True
 
-    if data.paddles[0].buttons[0] is False:
+    if data.paddles[1].buttons[0] is False:
         trigger = False
         rising_edge = False
 
@@ -205,7 +205,7 @@ while cnt > 0:
 _calib = False
 while not rospy.is_shutdown():
     if new_data and calData.get_index_counter() < calData.get_sample_size():
-        calData.add_data(hydra_msg.paddles[0])
+        calData.add_data(hydra_msg.paddles[1])
         new_data = False
     time.sleep(0.01)
 

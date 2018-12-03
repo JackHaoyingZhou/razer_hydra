@@ -1,7 +1,13 @@
 add_library(razer_hydra hydra.cpp)
 add_dependencies(razer_hydra razer_hydra_gencpp)
+if (${sixense_FOUND})
+add_executable(hydrajoy hydrajoy.cpp)
+endif()
 
 target_link_libraries(razer_hydra ${catkin_LIBRARIES} ${PC_LIBUSB_LIBRARIES})
+if (${sixense_FOUND})
+target_link_libraries(hydrajoy ${catkin_LIBRARIES} ${sixense_LIBRARIES})
+endif()
 
 install(TARGETS razer_hydra
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
