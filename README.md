@@ -26,6 +26,4 @@ Then, run following command in the terminal to connect Razer Hydra:
 roslaunch razer_hydra hydra.launch
 ```
 
-You attempt to echo the corresponding rostopics to check whether the device is validated.
-
-TEST 
+You attempt to echo the corresponding rostopics to check whether the device is validated. 
