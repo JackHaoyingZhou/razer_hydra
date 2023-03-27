@@ -18,7 +18,7 @@ for i in range(len(devices)):
     break
 
 
-print "device %d is the Razer Hydra"%(HYDRA_INDEX)
+print("device %d is Razer Hydra" % (HYDRA_INDEX) )
 #cmd = "./open_hydra_port"
 #p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).stdout #cmd is your script
 

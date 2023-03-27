@@ -9,7 +9,7 @@ See documentation on the ros wiki: http://www.ros.org/wiki/razer_hydra
 To find your connected Razer Hydra device, please run following commands in the terminal:
 
 ```bash
-sudo cp config/99-hydra-indigo.rules /usr/lib/udev/rules.d/
+sudo cp config/99-hydra-indigo.rules /etc/udev/rules.d/
 ```
 
 Then, reactivate the rules via
